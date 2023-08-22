@@ -1,0 +1,84 @@
+---
+title: "Lab3"
+author: "Zhang Zhixian"
+date: "2023-07-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Soccer tournament data wrangling
+
+Read the dataset of football games.
+```{r}
+data <- read.csv('D:/zhizhixian/Statistics-Computing-with-R/Data/results.csv')
+data
+```
+
+1. Select variables date, home_team and away_team.
+```{r}
+library(tidyverse)
+library(dplyr)
+data %>% select(date,home_team,away_team)
+```
+
+2. Subset games with **Brazil** as the home team.
+```{r}
+data_Brazil <- filter(data,home_team=='Brazil')
+data_Brazil
+```
+
+3. Choose the games that Brazil won as the home team, and select variables date, away_team and tournament.
+```{r}
+data_Brazil_win <- data_Brazil %>% filter(home_score>away_score)
+data_Brazil_win %>% select(date, away_team, tournament)
+
+```
+
+4. Add the difference of goals, and an indicator variable called goleada for when the difference of goals is large, and select what we did only for Brazil. **Hint: use ifelse**.
+# 是这样的吗？？？？？
+```{r}
+difference <- data$home_score-data$away_score
+goleada <- rep(1,each=length(difference))
+
+goleada <- ifelse(abs(difference)>=20,goleada*1,goleada*0)
+data_difference <- data.frame(data,difference,goleada)
+data_difference
+
+```
+
+5. What was the largest difference in goals within these games?
+```{r}
+max(abs(data_difference$difference))
+```
+
+6. The top 5 goleadas?
+```{r}
+data_difference <- data_difference[data_difference$goleada==1,]
+data_difference[order(-abs(data_difference[,10]))[1:5],]
+
+```
+
+7. Summary on goals scored by home teams, such as mean of home_score and away_score, std, using group_by and summarise
+# 牛牛
+```{r}
+data %>% group_by(home_team) %>% summarise(mean_home_score=mean(home_score),mean_away_score=mean(away_score),std_home_score=sd(home_score),std_away_score=sd(away_score))
+
+```
+
+8. Proportion of victories of Brazil on different tournaments against each opponent, for instance, Argentina.
+# 怎么写？？？？
+
+```{r}
+Tournaments <- unstack(data,tournament~home_team) ???
+  
+```
+
+
+
+
+
+
+

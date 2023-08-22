@@ -1,0 +1,146 @@
+---
+title: "Chapter6"
+author: "Zhang Zhixian"
+date: "2023-07-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+options(warn=-1) 
+```
+
+# 怎么突然没数据了？？？？？？
+```{r}
+library(tidyverse)
+library(dplyr)
+library(lubridate)
+library(MASS)
+birthwt
+summary(birthwt)
+```
+
+```{r}
+# make it readable
+colnames(birthwt) <- c("birthwt.below.2500", "mother.age", "mother.weight", "race", "mother.smokes", "previous.prem.labor", "hypertension", "uterine.irr", "physician.visits", "birthwt.grams")
+birthwt$race <- factor(c("white", "black", "other")[birthwt$race])
+birthwt$mother.smokes <- factor(c('No','Yes')[birthwt$mother.smokes+1])
+birthwt$uterine.irr <- factor(c('No','Yes')[birthwt$uterine.irr+1])
+birthwt$hypertension <- factor(c('No','Yes')[birthwt$hypertension+1])
+birthwt
+```
+
+# PLOT
+1. Bar plot for race
+```{r}
+birthwt %>% ggplot(aes(x=race,fill=race))+
+  geom_bar()+
+  labs(title="Count of Mother's Race")
+```
+
+2. Scatter plot for mother's ages
+```{r}
+birthwt %>% ggplot(aes(y=mother.age,x=c(1:nrow(birthwt))))+
+  geom_point()+
+  labs(title="Mother's ages",y='ages',x='number')
+```
+
+3.Sorted mother's ages
+```{r}
+birthwt %>% arrange(mother.age) %>% ggplot(aes(x=c(1:nrow(birthwt)),y=mother.age))+
+  geom_point()+
+  labs(title="Mother's Ages Sorted",y='Ages',x='Number')
+
+```
+
+4. Birth weight versus mother's ages
+```{r}
+birthwt %>% ggplot(aes(x=mother.age,y=birthwt.grams))+
+  geom_point()+
+  labs(title="Birth Weight Against Mother's Ages",y='Birth Weight',x="Mother's ages")
+```
+
+5. Boxplot
+```{r}
+birthwt %>% ggplot(aes(x=mother.smokes,y=birthwt.grams))+
+  geom_boxplot()+
+  labs(title="Birth Weight Against Mother's Smoking Habit",y='Birth Weight',x='Mother Smoke')
+```
+
+```{r}
+# Basic statistical testing
+t.test(birthwt$birthwt.grams[birthwt$mother.smokes=='Yes'],birthwt$birthwt.grams[birthwt$mother.smokes=='No'])
+```
+```{r}
+# Fit a linear model?
+linear.model.1 <- lm(birthwt$birthwt.grams~birthwt$mother.smokes)
+summary(linear.model.1)
+
+linear.model.2 <- lm(birthwt$birthwt.grams~birthwt$mother.age)
+summary(linear.model.2)
+
+
+# Detecting Outliers
+birthwt.noout <- birthwt %>% filter(mother.age<=40)
+linear.model.3 <- lm(birthwt.noout$birthwt.grams~birthwt.noout$mother.age)
+summary(linear.model.3)
+
+# More complex models
+linear.model.3a <- lm(data=birthwt.noout, birthwt.grams ~ mother.smokes + birthwt$mother.age)
+summary(linear.model.3a)
+
+linear.model.3b <- lm(data=birthwt.noout, birthwt.grams ~ mother.age + mother.smokes+ race)
+summary(linear.model.3b)
+
+# Everything in
+linear.model.4 <- lm(data=birthwt.noout,birthwt.grams~.)
+summary(linear.model.4)
+
+linear.model.4a <- lm(data=birthwt.noout,birthwt.grams ~ . - birthwt.below.2500)
+summary(linear.model.4a)
+
+# Generalized Linear Models
+glm.0 <- glm(data=birthwt.noout,birthwt.below.2500~.- birthwt.grams)
+
+glm.1 <-glm(data=birthwt,birthwt.below.2500~.- birthwt.grams,family=binomial())
+```
+
+```{r}
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,257 @@
+---
+title: "Homework2"
+author: "Zhang Zhixian"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(dplyr)
+library(DAAG)
+library(MASS)
+library(Devore7)
+library(ggpubr)
+```
+
+The data set calif_penn_2011.csv contains information about the housing stock of California and Pennsylvania, as of 2011. Information as aggregated into “Census tracts”, geographic regions of a few thousand
+people which are supposed to be fairly homogeneous economically and socially.
+
+
+1. _Loading and cleaning_
+
+a. Load the data into a dataframe called `ca_pa`.
+```{r warning=FALSE}
+ca_pa <- read.csv('D:/zhizhixian/Statistics-Computing-with-R/Data/calif_penn_2011.csv',header=TRUE)
+```   
+   b. How many rows and columns does the dataframe have?
+```{r warning=FALSE}
+dim(ca_pa)
+```
+Thus, it has 11,275 rows and 34 columns.
+
+   c. Run this command, and explain, in words, what this does: 
+```{r warning=FALSE}
+colSums(apply(ca_pa,c(1,2),is.na))
+```
+Explain:This command shows the number of NA value of each column of ca_pa.
+
+   d. The function `na.omit()` takes a dataframe and returns a new dataframe, omitting any row containing an NA value. Use it to purge the data set of rows with incomplete data.
+```{r warning=FALSE}
+ca_pa.new <- na.omit(ca_pa)
+```
+   e. How many rows did this eliminate?
+```{r warning=FALSE}
+dim(ca_pa.new)
+```
+It eliminates: 11275 - 10605 = 670 rows
+
+   f. Are your answers in (c) and (e) compatible?
+   Explain: No!This is because the na.omit() function can remove the row where the value of data is NA in ca_pa.
+
+2. _This Very New House_
+
+a. The variable `Built_2005_or_later` indicates the percentage of houses in each Census tract built since 2005. Plot median house prices against this variable.
+
+```{r warning=FALSE}
+ca_pa.new %>% ggplot(aes(x=Built_2005_or_later,y=Median_house_value))+
+  geom_point()+
+  geom_smooth(method='loess',col='red')+
+  labs(title='Median House Prices against the Percentage of Houses in Each Census Tract Built Since 2005 ',x='Percentage of Houses in Each Census Tract Since 2005',y='Median House Prices')
+```
+   
+   b. Make a new plot, or pair of plots, which breaks this out by state. Note that the state is recorded in the `STATEFP` variable, with California being state 6 and Pennsylvania state 42.
+```{r warning=FALSE}
+ca_pa.new %>% ggplot(aes(x=Built_2005_or_later,y=Median_house_value,color=STATEFP))+
+  geom_point()+
+  geom_smooth(method='loess')+
+  labs(title='Median House Prices against the Percentage of Houses in California and Pennsylvania Built Since 2005 ',x='Percentage of Houses in California and Pennsylvania Built Since 2005',y='Median House Prices')
+```
+
+
+3. _Nobody Home_
+
+The vacancy rate is the fraction of housing units which are not occupied. The dataframe contains columns giving the total number of housing units for each Census tract, and the number of vacant housing units.
+
+  a. Add a new column to the dataframe which contains the vacancy rate. What are the minimum, maximum, mean, and median vacancy rates?
+```{r warning=FALSE}
+vacancy_rate <- ca_pa.new$Vacant_units/ca_pa.new$Total_units 
+ca_pa.vacant <- data.frame(ca_pa.new, vacancy_rate)
+
+minimum_vacant <- min(ca_pa.vacant$vacancy_rate)
+maximum_vacant <- max(ca_pa.vacant$vacancy_rate)
+mean_vacant <- mean(ca_pa.vacant$vacancy_rate)
+median_vacant <- median(ca_pa.vacant$vacancy_rate)
+cat('minimum =',minimum_vacant,' maximum =',maximum_vacant,' mean =',mean_vacant,' median =',median_vacant)
+# or can use the describe() function in package psych
+```
+  b. Plot the vacancy rate against median house value.
+```{r warning=FALSE}
+ca_pa.vacant %>% ggplot(aes(x=Median_house_value,y=vacancy_rate))+
+  geom_point()+
+  labs(title='Vacancy Rate Against Median House Value',y='Vacancy rates',x='Median Housh Value')
+
+```
+  c. Plot vacancy rate against median house value separately for California and for Pennsylvania. Is there a difference?
+  
+```{r warning=FALSE}
+ca.vacant <- ca_pa.vacant[which(ca_pa.vacant$STATEFP == 6),]
+pa.vacant <- ca_pa.vacant[which(ca_pa.vacant$STATEFP == 42),]
+
+ca <- ca.vacant %>% ggplot(aes(x=Median_house_value,y=vacancy_rate))+
+  geom_point()+
+  labs(title='Vacancy Rate Against Median House Value in California',y='Vacancy rates',x='Median Housh Value')
+  
+pa <- pa.vacant %>% ggplot(aes(x=Median_house_value,y=vacancy_rate))+
+  geom_point()+
+  labs(title='Vacancy Rate Against Median House Value in Pennsylvania',y='Vacancy rates',x='Median Housh Value')
+
+ggarrange(ca,pa,ncol=2,nrow=1)
+```
+They are totally different!
+
+
+4. The column `COUNTYFP` contains a numerical code for counties within each state. We are interested in Alameda County (county 1 in California), Santa Clara (county 85 in California), and Allegheny County
+(county 3 in Pennsylvania).
+  a. Explain what the block of code at the end of this question is supposed to accomplish, and how it does it.
+```
+acca <- c()
+for (tract in 1:nrow(ca_pa)) {
+  if (ca_pa$STATEFP[tract] == 6) {
+    if (ca_pa$COUNTYFP[tract] == 1) {
+      acca <- c(acca, tract)
+    }
+  }
+}
+accamhv <- c()
+for (tract in acca) {
+  accamhv <- c(accamhv, ca_pa[tract,10])
+}
+median(accamhv)
+```
+Explain: This code calculates the median value of median house value of Alameda County.
+
+
+  b. Give a single line of R which gives the same final answer as the block of code. Note: there are at least two ways to do this; you just have to find one.
+```{r warning=FALSE}
+median((ca_pa.new %>% filter(STATEFP == 6 & COUNTYFP==1))$Median_house_value)
+
+```
+  c. For Alameda, Santa Clara and Allegheny Counties, what were the average percentages of housing built since 2005?
+```{r warning=FALSE}
+Alameda <- ca_pa.new[which(ca_pa.new$STATEFP == 6 & ca_pa.new$COUNTYFP == 1),]
+Santa_Clara <- ca_pa.new[which(ca_pa.new$STATEFP == 6 & ca_pa.new$COUNTYFP == 85),]
+Allegheny <- ca_pa.new[which(ca_pa.new$STATEFP == 42 & ca_pa.new$COUNTYFP == 3),]
+Alameda_mean_2005 <- mean(Alameda$Built_2005_or_later)
+Santa_Clara_mean_2005 <- mean(Santa_Clara$Built_2005_or_later)
+Allegheny_mean_2005 <- mean(Allegheny$Built_2005_or_later)
+cat('Alameda:',Alameda_mean_2005,'\n')
+cat('Santa Clara:',Santa_Clara_mean_2005,'\n')
+cat('Allegheny:',Allegheny_mean_2005)
+```
+  d. The `cor` function calculates the correlation coefficient between two variables. What is the correlation between median house value and the percent of housing built since 2005 in (i) the whole data, (ii) all of California, (iii) all of Pennsylvania, (iv) Alameda County, (v) Santa Clara County and (vi) Allegheny County?
+```{r warning=FALSE}
+cor_ca_pa <- cor(ca_pa.new$Median_house_value,ca_pa.new$Built_2005_or_later)
+cor_ca <- cor(ca.vacant$Median_house_value,ca.vacant$Built_2005_or_later)
+cor_pa <- cor(pa.vacant$Median_house_value,pa.vacant$Built_2005_or_later)
+cor_Alameda <- cor(Alameda$Median_house_value,Alameda$Built_2005_or_later)
+cor_Santa_Clara <- cor(Santa_Clara$Median_house_value,Santa_Clara$Built_2005_or_later)
+cor_Allegheny <- cor(Allegheny$Median_house_value,Allegheny$Built_2005_or_later)
+cat('Whole:',cor_ca_pa,'\n')
+cat('California:',cor_ca,'\n')
+cat('Pennsylvania:',cor_pa,'\n')
+cat('Alameda:',cor_Alameda,'\n')
+cat('Santa Clara:',cor_Santa_Clara,'\n')
+cat('Allegheny:',cor_Allegheny)
+```
+  e. Make three plots, showing median house values against median income, for Alameda, Santa Clara, and Allegheny Counties. (If you can fit the information into one plot, clearly distinguishing the three counties, that’s OK too.)
+```{r warning=FALSE}
+Alameda_plot <- Alameda %>% ggplot(aes(x=Median_household_income,y=Median_house_value))+
+  geom_point()+
+  labs(title='Alameda')
+
+Santa_Clara_plot <- Santa_Clara %>% ggplot(aes(x=Median_household_income,y=Median_house_value))+
+  geom_point()+
+  labs(title='Santa Clara')
+
+Allegheny_plot <- Allegheny %>% ggplot(aes(x=Median_household_income,y=Median_house_value))+
+  geom_point()+
+  labs(title='Allegheny')
+
+ggarrange(Alameda_plot,Santa_Clara_plot,Allegheny_plot,ncol=3,nrow=1)
+
+```
+
+**MB.Ch1.11.** Run the following code and explain the output from the successive uses of table().
+```{r warning=FALSE}
+gender <- factor(c(rep('female',91),rep('male',92)))
+table(gender)
+```
+```{r warning=FALSE}
+gender <- factor(gender,levels=c('male','female'))
+table(gender)
+```
+```{r warning=FALSE}
+gender <- factor(gender,levels=c('Male','female'))
+# Note the mistake: "Male" should be "male"
+table(gender)
+```
+```{r warning=FALSE}
+table(gender, exclude=NULL)
+```
+```{r warning=FALSE}
+rm(gender) # Remove gender
+```
+
+Explain:
+The first piece of code makes gender a factor with two levels female and male.
+The second piece of code changed the order of two levels.
+The third piece of code mistypes 'male' as 'Male', so the number of 'Male' is 0.
+The fourth piece of code outputs the number of NA, which is the number of 'male'.
+
+
+**MB.Ch1.12.** Write a function that calculates the proportion of values in a vector x that exceed some value cutoff.
+```{r warning=FALSE}
+prop_cutoff <- function(x,a){
+  tol = 0
+  for(i in 1:length(x)){
+    if(x[i]>a){
+      tol=tol+1
+    }
+  }
+  tol/length(x)
+}
+```
+
+  a. Use the sequence of numbers 1, 2, . . . , 100 to check that this function gives the result that is expected.
+```{r warning=FALSE}
+test <- seq(1,100)
+prop_cutoff(test,50)
+# successful
+```
+  
+  b. Obtain the vector ex01.36 from the Devore6 (or Devore7) package. These data give the times required for individuals to escape from an oil platform during a drill. Use dotplot() to show the distribution of times. Calculate the proportion of escape times that exceed 7 minutes.
+  
+```{r warning=FALSE}
+x <- ex01.36
+cat('The proportion of escape times that exceed 7 minutes =',prop_cutoff(x$C1,420))
+dotplot(x)
+```
+
+
+**MB.Ch1.18.** The Rabbit data frame in the MASS library contains blood pressure change measurements on five rabbits (labeled as R1, R2, . . . ,R5) under various control and treatment conditions. Read the help file
+for more information. Use the unstack() function (three times) to convert Rabbit to the following form:
+
+Treatment Dose   R1   R2   R3   R4   R5 
+
+1 Control 6.25  0.50 1.00 0.75 1.25 1.5 
+
+2 Control 12.50 4.50 1.25 3.00 1.50 1.5 
+```{r warning=FALSE}
+Treatment <- unstack(Rabbit,Treatment~Animal)[,1]
+Dose <- unstack(Rabbit,Dose~Animal)[,1]
+BPchange <- unstack(Rabbit,BPchange~Animal)
+data.frame(Treatment,Dose,BPchange)
+
+```
+

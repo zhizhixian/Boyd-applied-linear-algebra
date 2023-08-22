@@ -1,0 +1,73 @@
+---
+title: "Lab2-3210104129"
+author: "Zhang Zhixian"
+date: "2023-07-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Today’s agenda: data visualization with ggplot2. Get help on dataset ChickWeight by **?ChickWeight**. Play with the following R code to figure out what we are doing here
+#First Plot
+
+# 这里的alpha是做了什么？？
+```{r}
+library(tidyverse)
+library(dplyr)
+
+ChickWeight <- data.frame(ChickWeight)
+ChickWeight
+
+ChickWeight %>% ggplot(aes(x=Time, y=weight, colour=Diet)) +
+  geom_point(alpha=.3) +
+  geom_smooth(method='loess',alpha=.2, size=1) +
+  ggtitle("Fitted growth curve per diet")
+
+
+```
+
+# Second Plot
+# 此处用dataframe会报错？？？？
+```{r}
+ggplot(subset(ChickWeight,Time==21), aes(x=weight, colour=Diet))+
+  geom_density()+
+  ggtitle("Final weight, by diet")
+
+```
+
+# Third Plot
+```{r}
+p3 <- ggplot(subset(ChickWeight, Time==21), aes(x=weight, fill=Diet))+
+  geom_histogram(colour="black", binwidth=50) +
+  facet_grid(Diet ~ .) +  # 这个是什么？？？
+  ggtitle("Final weight, by diet") +
+  theme(legend.position="none") # No legend (redundant in this graph)
+p3
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

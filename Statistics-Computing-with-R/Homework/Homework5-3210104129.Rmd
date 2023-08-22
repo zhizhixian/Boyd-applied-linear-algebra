@@ -1,0 +1,94 @@
+---
+title: "Homework5"
+author: "Zhang Zhixian-3210104129"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+We continue working with the World Top Incomes Database [<https://wid.world>], and the Pareto distribution, as in the lab. We also continue to practice working with data frames, manipulating data from one format to another, and writing functions to automate repetitive tasks.
+
+We saw in the lab that if the upper tail of the income distribution followed a perfect Pareto distribution, then 
+\begin{eqnarray}
+\label{eqn:1percent-vs-0.1-percent}
+\left(\frac{P99}{P99.9}\right)^{-a+1}  & = & 10\\
+\left(\frac{P99.5}{P99.9}\right)^{-a+1} & = & 5\\
+\left(\frac{P99}{P99.5}\right)^{-a+1} & = & 2
+\label{eqn:1percent-vs-0.5-percent}
+\end{eqnarray} We could estimate the Pareto exponent by solving any one of these equations for $a$; in lab we used \begin{equation}
+a = 1 - \frac{\log{10}}{\log{(P99/P99.9)}} ~,
+\label{eqn:exponent-from-quantile-ratio}
+\end{equation}
+
+Because of measurement error and sampling noise, we can't find find one value of $a$ which will work for all three equations. Generally, trying to make all three equations come close to balancing gives a better estimate of $a$ than just solving one of them. (This is analogous to finding the slope and intercept of a regression line by trying to come close to all the points in a scatterplot, and not just running a line through two of them.)
+
+1.  We estimate $a$ by minimizing 
+$$ \left(\left(\frac{P99}{P99.9}\right)^{-a+1} - 10\right)^2 + \left(\left(\frac{P99.5}{P99.9}\right)^{-a+1} - 5\right)^2 +  \left(\left(\frac{P99}{P99.5}\right)^{-a+1} - 2\right)^2 $$ 
+Write a function, **percentile_ratio_discrepancies**, which takes as inputs **P99, P99.5, P99.9** and **a**, and returns the value of the expression above. Check that when **P99=1e6, P99.5=2e6, P99.9=1e7 and a=2**, your function returns 0.
+
+```{r warning=FALSE}
+percentile_ratio_discrepancies <- function(P99,P99.5,P99.9,a){
+  p1 <- (P99/P99.9)^(-a+1)-10
+  p2 <- (P99.5/P99.9)^(-a+1)-5
+  p3 <- (P99/P99.5)^(-a+1)-2
+  return(p1^2+p2^2+p3^2)
+}
+
+percentile_ratio_discrepancies(1e6,2e6,1e7,2)
+```
+
+2.  Write a function, **exponent.multi_ratios_est**, which takes as inputs **P99, P99.5, P99.9**, and estimates **a**. It should minimize your **percentile_ratio_discrepancies** function. The starting value for the minimization should come from `exponent-from-quantile-ratio`. Check that when **P99=1e6, P99.5=2e6** and **P99.9=1e7**, your function returns an **a** of 2.
+```{r warning=FALSE}
+exponent.multi_ratios_est <- function(P99,P99.5,P99.9){
+  a <- 1-(log(10)/log(P99/P99.9))
+  amse <- function(a){
+    return(percentile_ratio_discrepancies(P99,P99.5,P99.9,a))
+  }
+  return(nlm(amse,a)$estimate)
+}
+
+exponent.multi_ratios_est(1e6,2e6,1e7)
+```
+
+3.  Write a function which uses **exponent.multi_ratios_est** to estimate $a$ for the US for every year from 1913 to 2012. (There are many ways you could do thi, including loops.) Plot the estimates; make sure the labels of the plot are appropriate.
+
+```{r warning=FALSE}
+library(tidyverse)
+library(dplyr)
+wtid <- read.csv('D:/zhizhixian/Statistics-Computing-with-R/Data/wtid-report.csv')
+data <- wtid[,c(2,5:7)]
+a_for_one <- function(x){
+  P99 <- x[2]
+  P99.5 <- x[3]
+  P99.9 <- x[4]
+  return(exponent.multi_ratios_est(P99,P99.5,P99.9))
+}
+a <- apply(data,1,a_for_one)
+
+data <- data %>% mutate(Estimate_from_exponent.multi_ratios_est=a)
+head(data)
+```
+```{r warning=FALSE}
+data %>% ggplot(aes(x=Year,y=Estimate_from_exponent.multi_ratios_est))+
+  geom_point(size=2)+
+  geom_line(size=0.5)+
+  labs(title='Estimate of a for the US from 1913 to 2012',x='Year',y='Estimate of a')
+```
+
+4.  Use exponent-from-quantile-ratio to estimate $a$ for the US for every year. Make a scatter-plot of these estimates against those from problem 3. If they are identical or completely independent, something is wrong with at least one part of your code. Otherwise, can you say anything about how the two estimates compare?
+
+```{r warning=FALSE}
+data <- data %>% mutate(Estimate_from_formula=1-(log(10)/log(data$P99.income.threshold/data$P99.9.income.threshold)))
+
+data %>% ggplot(aes(x=Estimate_from_exponent.multi_ratios_est,y=Estimate_from_formula))+
+  geom_point(size=1)+
+  geom_line()+
+  labs(title='Comparison of Two Estimates for the US from 1913 to 2012',x="Estimate from 'exponent.multi_ratios_est'",y='Estimate from formula')+
+  geom_smooth(method='lm',size=0.5,color='black')
+```
+
+
+
+

@@ -1,0 +1,38 @@
+---
+title: "Lab5"
+author: "Zhang Zhixian"
+date: "2023-07-06"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Re producibility and Functions
+
+Some of the lectures have included examples of planning production for a factory that turns steel and labor into cars and trucks. Below is a piece of code that optimizes the factory’s output (roughly) given the available resources, using a repeat loop. It’s embedded in a function to make it easier for you to run.
+
+5. Run the function above with the command to obtain a default output value, starting from a very low initial planned output. What is the final output
+capacity obtained?
+
+6. Repeat this four more times to obtain new output values. Do these answers differ from each other? If
+so why? If not, why not?
+
+7. Right now, the number of passes is a value held within the function itself and not shared. Change
+the code so that the number of passes will be returned at the end of the function, as well as the final
+output.
+
+8. Now, set the initial output levels to 30 cars and 20 trucks and run the code. What is the final output
+plan (output)? What is the final demand for resources (needed)? Is the plan within budget and within
+the slack? How many iterations did it take to converge (passes)? For all but output you will need
+to either print this message out deliberately, or return an object that contains all the quantities you
+want.
+
+
+
+
+
+
+
+
